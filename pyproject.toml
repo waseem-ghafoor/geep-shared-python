@@ -1,0 +1,37 @@
+[tool.poetry]
+name = "geep_shared_python"
+version = "0.2.37"
+description = ""
+authors = ["Matt Wilson <matt.wilson@britishcouncil.org>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+opentelemetry-sdk = "^1.25.0"
+opentelemetry-api = "^1.25.0"
+opentelemetry-exporter-otlp-proto-http = "^1.25.0"
+pydantic-settings = "^2.2.1"
+opentelemetry-instrumentation = "^0.49b1"
+opentelemetry-instrumentation-fastapi = "^0.49b1"
+opentelemetry-instrumentation-logging = "^0.49b1"
+fastapi = "^0.115.5"
+click = "^8.1.7"
+pyjwt = "^2.10.1"
+httpx = "^0.28.1"
+sqlalchemy = "^2.0.38"
+boto3 = "^1.37.10"
+psycopg2-binary = "^2.9.10"
+ftfy = "^6.3.1"
+unidecode = "^1.4.0"
+
+[tool.poetry.group.dev.dependencies]
+pyright = "^1.1.364"
+flake8 = "^7.0.0"
+black = "^24.4.2"
+isort = "^5.13.2"
+pytest = "^8.2.1"
+boto3-stubs = "^1.37.10"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

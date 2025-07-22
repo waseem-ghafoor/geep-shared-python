@@ -1,0 +1,107 @@
+name: GEEP Shared Python Release Version
+run-name: ${{github.actor}} is releasing ${{github.workflow}} @ ${{github.ref}}
+
+env:
+  BRANCH_NAME: ${{github.head_ref || github.ref_name}}
+
+permissions:
+  id-token: write
+  contents: write
+  pull-requests: write
+  security-events: write
+  actions: read
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+concurrency:
+  cancel-in-progress: true
+  group: "${{github.workflow}} @ ${{github.ref}}"
+
+jobs:
+  Release_Version:
+    name: 🔖 Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{steps.get-version.outputs.version}}
+    steps:
+      - name: 🎉 Checkout
+        uses: britishcouncil/geep-github-actions/checkout@main
+        with:
+          fetch-depth: 0
+
+      - uses: britishcouncil/geep-github-actions/semantic-version@main
+        name: 🔖 Get Version
+        id: get-version
+        with:
+          # The prefix to use to identify tags
+          tag_prefix: "v"
+          # A string which, if present in a git commit, indicates that a change represents a
+          # major (breaking) change, supports regular expressions wrapped with '/'
+          major_pattern: "(MAJOR)"
+          # A string which indicates the flags used by the `major_pattern` regular expression. Supported flags: idgs
+          major_regexp_flags: ""
+          # Same as above except indicating a minor change, supports regular expressions wrapped with '/'
+          minor_pattern: "(MINOR)"
+          # A string which indicates the flags used by the `minor_pattern` regular expression. Supported flags: idgs
+          minor_regexp_flags: ""
+          # A string to determine the format of the version output
+          version_format: "${major}.${minor}.${patch}"
+          # Named version, will be used as suffix for name version tag
+          # namespace: ${{steps.get-release-prefix.outputs.release_prefix}}
+          # If this is set to true, *every* commit will be treated as a new version.
+          bump_each_commit: false
+          # If bump_each_commit is also set to true, setting this value will cause the version to increment only if the pattern specified is matched.
+          bump_each_commit_patch_pattern: ""
+          # If true, the body of commits will also be searched for major/minor patterns to determine the version type.
+          search_commit_body: false
+          # The output method used to generate list of users, 'csv' or 'json'.
+          user_format_type: "csv"
+          # Prevents pre-v1.0.0 version from automatically incrementing the major version.
+          # If enabled, when the major version is 0, major releases will be treated as minor and minor as patch. Note that the version_type output is unchanged.
+          enable_prerelease_mode: false
+          # If enabled, diagnostic information will be added to the action output.
+          debug: false
+          # If true, the branch will be used to select the maximum version.
+          version_from_branch: true
+
+      # Step to write version information to a file
+      - name: 📝 Write Version Info to File
+        run: |
+          echo "Version: ${{steps.get-version.outputs.version}}" >  Release.txt
+          echo "Major: ${{steps.get-version.outputs.major}}" >>  Release.txt
+          echo "Minor: ${{steps.get-version.outputs.minor}}" >>  Release.txt
+          echo "Patch: ${{steps.get-version.outputs.patch}}" >>  Release.txt
+          echo "Increment: ${{steps.get-version.outputs.increment}}" >>  Release.txt
+          echo "Version Type: ${{steps.get-version.outputs.version_type}}" >>  Release.txt
+          echo "Authors: ${{steps.get-version.outputs.authors}}" >>  Release.txt
+          echo "Current Commit: ${{steps.get-version.outputs.current_commit}}" >>  Release.txt
+          echo "Previous Commit: ${{steps.get-version.outputs.previous_commit}}" >>  Release.txt
+          echo "Previous Version: ${{steps.get-version.outputs.previous_version}}" >>  Release.txt
+
+      - name: 📝 Describe Versioning File
+        run: |
+          VERSION=$(cat  Release.txt)
+          echo "The version is $VERSION"
+
+      - uses: britishcouncil/geep-github-actions/create-tag@main
+        name: 🔖 Tag Create
+        id: "tag_create"
+        if: github.ref == 'refs/heads/main'
+        with:
+          tag: "v${{steps.get-version.outputs.version}}"
+          tag_exists_error: false
+          message: "Release ${{steps.get-version.outputs.version}}"
+
+      - name: ✨ Release
+        if: github.ref == 'refs/heads/main'
+        uses: britishcouncil/geep-github-actions/github-release@main
+        with:
+          prerelease: false
+          name: "v${{steps.get-version.outputs.version}}"
+          tag_name: "v${{steps.get-version.outputs.version}}"
+          draft: false
+          files: Release.txt
